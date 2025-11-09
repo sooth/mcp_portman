@@ -9,7 +9,7 @@ A Model Context Protocol (MCP) server for managing port registrations on your co
 - **Lookup by Application**: Find all ports registered to an application
 - **Register Port**: Register a port to an application with description
 - **Unregister Port**: Remove port registrations
-- **JSON Persistence**: All registrations saved to `~/.mcp_portman_registry.json`
+- **JSON Persistence**: All registrations saved to `~/.mcp_portman/registry.json`
 - **OS-Level Checking**: Verifies actual port availability using socket binding
 
 ## Installation
@@ -229,9 +229,9 @@ The server manages ports in the **user/registered port range: 1024-49151**
 
 ## Data Storage
 
-Port registrations are stored in: `~/.mcp_portman_registry.json`
+Port registrations are stored in: `~/.mcp_portman/registry.json`
 
-The file is automatically created on first registration. Format:
+The directory and file are automatically created on first registration. Format:
 
 ```json
 {
@@ -300,7 +300,7 @@ A port must be free in BOTH to be considered available.
 
 ### Cannot write to registry file
 
-Ensure you have write permissions to your home directory. The registry file is created at `~/.mcp_portman_registry.json`
+Ensure you have write permissions to your home directory. The registry file is created at `~/.mcp_portman/registry.json`
 
 ## License
 

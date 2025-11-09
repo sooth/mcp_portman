@@ -11,7 +11,7 @@ from fastmcp import FastMCP
 mcp = FastMCP("Port Manager")
 
 # Configuration
-REGISTRY_FILE = Path.home() / ".mcp_portman_registry.json"
+REGISTRY_FILE = Path.home() / ".mcp_portman" / "registry.json"
 PORT_RANGE_START = 1024
 PORT_RANGE_END = 49151
 
@@ -30,6 +30,8 @@ def load_registry() -> Dict[str, Dict[str, str]]:
 
 def save_registry(registry: Dict[str, Dict[str, str]]) -> None:
     """Save the port registry to JSON file."""
+    # Ensure the directory exists
+    REGISTRY_FILE.parent.mkdir(parents=True, exist_ok=True)
     with open(REGISTRY_FILE, 'w') as f:
         json.dump(registry, f, indent=2)
 

@@ -38,7 +38,7 @@ env/
 Thumbs.db
 
 # MCP Port Manager specific
-.mcp_portman_registry.json
+.mcp_portman/
 
 # uv
 .uv/
