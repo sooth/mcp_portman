@@ -14,39 +14,22 @@ A Model Context Protocol (MCP) server for managing port registrations on your co
 
 ## Installation
 
-### Prerequisites
+### Quick Install (Claude Code)
 
-- Python 3.10 or higher
-- [uv](https://github.com/astral-sh/uv) - Modern Python package manager
-
-### Install uv (if not already installed)
+One command to install directly from GitHub:
 
 ```bash
-curl -LsSf https://astral.sh/uv/install.sh | sh
+claude mcp add port-manager -- uvx --from git+https://github.com/sooth/mcp_portman mcp-portman
 ```
 
-### Install MCP Port Manager
-
-1. Clone or download this repository:
+Verify installation:
 ```bash
-cd /path/to/mcp_portman
+claude mcp list
 ```
 
-2. Install dependencies with uv:
-```bash
-uv sync
-```
+### Alternative: Claude Desktop Manual Configuration
 
-3. Test the server:
-```bash
-uv run mcp-portman
-```
-
-## Usage with Claude Desktop
-
-Add this server to your Claude Desktop configuration:
-
-### macOS Configuration
+#### macOS
 
 Edit `~/Library/Application Support/Claude/claude_desktop_config.json`:
 
@@ -54,11 +37,10 @@ Edit `~/Library/Application Support/Claude/claude_desktop_config.json`:
 {
   "mcpServers": {
     "port-manager": {
-      "command": "uv",
+      "command": "uvx",
       "args": [
-        "--directory",
-        "/path/to/mcp_portman",
-        "run",
+        "--from",
+        "git+https://github.com/sooth/mcp_portman",
         "mcp-portman"
       ]
     }
@@ -66,7 +48,7 @@ Edit `~/Library/Application Support/Claude/claude_desktop_config.json`:
 }
 ```
 
-### Windows Configuration
+#### Windows
 
 Edit `%APPDATA%\Claude\claude_desktop_config.json`:
 
@@ -74,16 +56,33 @@ Edit `%APPDATA%\Claude\claude_desktop_config.json`:
 {
   "mcpServers": {
     "port-manager": {
-      "command": "uv",
+      "command": "uvx",
       "args": [
-        "--directory",
-        "C:\\path\\to\\mcp_portman",
-        "run",
+        "--from",
+        "git+https://github.com/sooth/mcp_portman",
         "mcp-portman"
       ]
     }
   }
 }
+```
+
+After editing, restart Claude Desktop.
+
+### Local Development Setup
+
+For local development or contributing:
+
+```bash
+# Clone the repository
+git clone https://github.com/sooth/mcp_portman.git
+cd mcp_portman
+
+# Install dependencies
+uv sync
+
+# Run the server
+uv run mcp-portman
 ```
 
 ## Available Tools
@@ -283,12 +282,13 @@ uv run python -m mcp_portman.server
 
 ## Troubleshooting
 
-### Server not appearing in Claude Desktop
+### Server not appearing in Claude Code/Desktop
 
-1. Check the configuration file path is correct
-2. Verify uv is installed: `uv --version`
-3. Restart Claude Desktop completely
-4. Check Claude Desktop logs for errors
+1. Verify installation: `claude mcp list` should show "port-manager"
+2. Check server status: `claude mcp get port-manager`
+3. Verify uv is installed: `uv --version`
+4. For Claude Desktop: Restart the application completely
+5. Check logs for errors
 
 ### Port shows as unavailable but not registered
 
