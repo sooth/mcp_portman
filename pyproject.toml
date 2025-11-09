@@ -1,0 +1,19 @@
+[project]
+name = "mcp-portman"
+version = "0.1.0"
+description = "MCP server for managing port registrations on your computer"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "fastmcp>=2.0.0",
+]
+
+[project.scripts]
+mcp-portman = "mcp_portman.server:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.uv]
+dev-dependencies = []
