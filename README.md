@@ -22,10 +22,35 @@ One command to install directly from GitHub:
 claude mcp add port-manager -- uvx --from git+https://github.com/sooth/mcp_portman mcp-portman
 ```
 
+**For global installation** (available in all projects on your machine):
+
+```bash
+claude mcp add --scope user port-manager -- uvx --from git+https://github.com/sooth/mcp_portman mcp-portman
+```
+
 Verify installation:
 ```bash
 claude mcp list
 ```
+
+#### Installation Scopes
+
+Choose the appropriate scope for your needs:
+
+- **Local** (default): Project/workspace-specific, not shared
+  ```bash
+  claude mcp add port-manager -- uvx --from git+https://github.com/sooth/mcp_portman mcp-portman
+  ```
+
+- **User** (global): Available across all projects on your machine
+  ```bash
+  claude mcp add --scope user port-manager -- uvx --from git+https://github.com/sooth/mcp_portman mcp-portman
+  ```
+
+- **Project**: Stored in `.mcp.json` in project root (can be committed to git for team sharing)
+  ```bash
+  claude mcp add --scope project port-manager -- uvx --from git+https://github.com/sooth/mcp_portman mcp-portman
+  ```
 
 ### Alternative: Claude Desktop Manual Configuration
 
