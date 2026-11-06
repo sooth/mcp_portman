@@ -14,101 +14,73 @@ A Model Context Protocol (MCP) server for managing port registrations on your co
 
 ## Installation
 
-### Quick Install (Claude Code)
+There are two implementations of the same server. Both expose the same tools and share `~/.mcp_portman/registry.json`.
 
-One command to install directly from GitHub:
+| Version | Idle memory per session | Platforms | Needs |
+|---|---|---|---|
+| **Rust** (recommended) | ~1.3 MB | macOS | Rust toolchain to build |
+| Python | ~12 MB (+ ~16 MB if launched via `uv`/`uvx`) | macOS, Linux, Windows | `uv` |
+
+Every Claude Code / Codex session starts its own copy of each MCP server, so per-copy memory adds up with many sessions open.
+
+### Rust (macOS)
 
 ```bash
-claude mcp add port-manager -- uvx --from git+https://github.com/sooth/mcp_portman mcp-portman
+cargo install --git https://github.com/sooth/mcp_portman mcp-portman
 ```
 
-**For global installation** (available in all projects on your machine):
+```bash
+claude mcp add --scope user port-manager -- ~/.cargo/bin/mcp-portman
+```
+
+Codex (`~/.codex/config.toml`):
+
+```toml
+[mcp_servers.port-manager]
+command = "/Users/<you>/.cargo/bin/mcp-portman"
+args = []
+```
+
+Claude Desktop (`~/Library/Application Support/Claude/claude_desktop_config.json`):
+
+```json
+{
+  "mcpServers": {
+    "port-manager": { "command": "/Users/<you>/.cargo/bin/mcp-portman" }
+  }
+}
+```
+
+### Python (any platform)
+
+No third-party dependencies; standard library only.
 
 ```bash
 claude mcp add --scope user port-manager -- uvx --from git+https://github.com/sooth/mcp_portman mcp-portman
 ```
 
-Verify installation:
-```bash
-claude mcp list
-```
-
-#### Installation Scopes
-
-Choose the appropriate scope for your needs:
-
-- **Local** (default): Project/workspace-specific, not shared
-  ```bash
-  claude mcp add port-manager -- uvx --from git+https://github.com/sooth/mcp_portman mcp-portman
-  ```
-
-- **User** (global): Available across all projects on your machine
-  ```bash
-  claude mcp add --scope user port-manager -- uvx --from git+https://github.com/sooth/mcp_portman mcp-portman
-  ```
-
-- **Project**: Stored in `.mcp.json` in project root (can be committed to git for team sharing)
-  ```bash
-  claude mcp add --scope project port-manager -- uvx --from git+https://github.com/sooth/mcp_portman mcp-portman
-  ```
-
-### Alternative: Claude Desktop Manual Configuration
-
-#### macOS
-
-Edit `~/Library/Application Support/Claude/claude_desktop_config.json`:
+Claude Desktop (macOS `~/Library/Application Support/Claude/claude_desktop_config.json`, Windows `%APPDATA%\Claude\claude_desktop_config.json`):
 
 ```json
 {
   "mcpServers": {
     "port-manager": {
       "command": "uvx",
-      "args": [
-        "--from",
-        "git+https://github.com/sooth/mcp_portman",
-        "mcp-portman"
-      ]
+      "args": ["--from", "git+https://github.com/sooth/mcp_portman", "mcp-portman"]
     }
   }
 }
 ```
 
-#### Windows
+To skip the `uv` launcher's memory, install into a venv and point the config at `.venv/bin/mcp-portman` directly.
 
-Edit `%APPDATA%\Claude\claude_desktop_config.json`:
+### Scopes (Claude Code)
 
-```json
-{
-  "mcpServers": {
-    "port-manager": {
-      "command": "uvx",
-      "args": [
-        "--from",
-        "git+https://github.com/sooth/mcp_portman",
-        "mcp-portman"
-      ]
-    }
-  }
-}
-```
+- **Local** (default): this project only, not shared
+- **User** (`--scope user`): all projects on your machine
+- **Project** (`--scope project`): stored in `.mcp.json` in the project root, can be committed
 
-After editing, restart Claude Desktop.
-
-### Local Development Setup
-
-For local development or contributing:
-
-```bash
-# Clone the repository
-git clone https://github.com/sooth/mcp_portman.git
-cd mcp_portman
-
-# Install dependencies
-uv sync
-
-# Run the server
-uv run mcp-portman
-```
+Verify with `claude mcp get port-manager`. Sessions that are already open keep the command they started with; start a new session to pick up a change.
 
 ## Available Tools
 
@@ -275,34 +247,25 @@ The directory and file are automatically created on first registration. Format:
 
 ## Development
 
-Built with modern Python tools:
-- **FastMCP**: Modern framework for building MCP servers
-- **uv**: Fast, reliable Python package manager
-
-### Project Structure
-
 ```
 mcp_portman/
-├── pyproject.toml              # Project configuration
-├── README.md                   # This file
-├── .gitignore                  # Git ignore rules
-└── src/
-    └── mcp_portman/
-        ├── __init__.py         # Package initialization
-        └── server.py           # Main MCP server implementation
+├── rust/
+│   ├── Cargo.toml
+│   └── src/main.rs            # Rust server (MCP over stdio, serde_json only)
+├── pyproject.toml
+└── src/mcp_portman/
+    └── server.py              # Python server (standard library only)
 ```
 
-### Running in Development
+Both speak MCP over stdio as newline-delimited JSON-RPC. Keep the two in step when changing a tool.
 
 ```bash
-# Install dependencies
+# Rust: build and install to ~/.cargo/bin
+cargo install --path rust
+
+# Python
 uv sync
-
-# Run the server
 uv run mcp-portman
-
-# Or run directly with Python
-uv run python -m mcp_portman.server
 ```
 
 ## Troubleshooting
@@ -311,7 +274,7 @@ uv run python -m mcp_portman.server
 
 1. Verify installation: `claude mcp list` should show "port-manager"
 2. Check server status: `claude mcp get port-manager`
-3. Verify uv is installed: `uv --version`
+3. Check the configured command exists (`~/.cargo/bin/mcp-portman`, or `uv --version` for the Python version)
 4. For Claude Desktop: Restart the application completely
 5. Check logs for errors
 
