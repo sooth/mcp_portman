@@ -1,12 +1,10 @@
 [project]
 name = "mcp-portman"
-version = "0.1.0"
+version = "0.2.0"
 description = "MCP server for managing port registrations on your computer"
 readme = "README.md"
 requires-python = ">=3.10"
-dependencies = [
-    "fastmcp>=2.0.0",
-]
+dependencies = []
 
 [project.scripts]
 mcp-portman = "mcp_portman.server:main"

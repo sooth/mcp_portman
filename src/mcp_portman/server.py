@@ -5,10 +5,25 @@ import socket
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional
-from fastmcp import FastMCP
+import sys
 
-# Initialize the MCP server
-mcp = FastMCP("Port Manager")
+# ponytail: hand-rolled stdio JSON-RPC instead of fastmcp; fastmcp's import tree (pydantic, httpx, starlette...) was ~60 MB per session.
+TOOLS = {}
+
+
+def tool(schema):
+    def deco(fn):
+        TOOLS[fn.__name__] = (fn, schema)
+        return fn
+    return deco
+
+
+def _int(desc):
+    return {"type": "integer", "description": desc}
+
+
+def _str(desc):
+    return {"type": "string", "description": desc}
 
 # Configuration
 REGISTRY_FILE = Path.home() / ".mcp_portman" / "registry.json"
@@ -47,7 +62,7 @@ def is_port_available(port: int) -> bool:
         return False
 
 
-@mcp.tool()
+@tool({"type": "object", "properties": {"preferred_port": _int("Optional specific port to check")}})
 def get_free_port(preferred_port: Optional[int] = None) -> dict:
     """
     Find and return an available port. Checks both the registry and OS-level availability.
@@ -104,7 +119,7 @@ def get_free_port(preferred_port: Optional[int] = None) -> dict:
     }
 
 
-@mcp.tool()
+@tool({"type": "object", "properties": {"port": _int("The port number to look up")}, "required": ["port"]})
 def lookup_by_port(port: int) -> dict:
     """
     Look up information about a specific port.
@@ -134,7 +149,7 @@ def lookup_by_port(port: int) -> dict:
         }
 
 
-@mcp.tool()
+@tool({"type": "object", "properties": {"app_name": _str("Application name (case-insensitive)")}, "required": ["app_name"]})
 def lookup_by_application(app_name: str) -> dict:
     """
     Find all ports registered to a specific application.
@@ -166,7 +181,7 @@ def lookup_by_application(app_name: str) -> dict:
     }
 
 
-@mcp.tool()
+@tool({"type": "object", "properties": {"port": _int("Port number to register"), "app_name": _str("Application using this port"), "description": _str("What the port is used for")}, "required": ["port", "app_name"]})
 def register_port(port: int, app_name: str, description: str = "") -> dict:
     """
     Register a port to an application.
@@ -216,7 +231,7 @@ def register_port(port: int, app_name: str, description: str = "") -> dict:
     }
 
 
-@mcp.tool()
+@tool({"type": "object", "properties": {"port": _int("Port number to unregister")}, "required": ["port"]})
 def unregister_port(port: int) -> dict:
     """
     Remove a port registration.
@@ -251,9 +266,56 @@ def unregister_port(port: int) -> dict:
     }
 
 
+def _reply(msg_id, result=None, error=None):
+    out = {"jsonrpc": "2.0", "id": msg_id}
+    out["error" if error else "result"] = error or result
+    sys.stdout.write(json.dumps(out) + "\n")
+    sys.stdout.flush()
+
+
+def handle(msg):
+    method, msg_id, params = msg.get("method"), msg.get("id"), msg.get("params") or {}
+    if msg_id is None:  # notification (e.g. notifications/initialized)
+        return
+    if method == "initialize":
+        _reply(msg_id, {
+            "protocolVersion": params.get("protocolVersion", "2025-06-18"),
+            "capabilities": {"tools": {}},
+            "serverInfo": {"name": "Port Manager", "version": "0.2.0"},
+        })
+    elif method == "ping":
+        _reply(msg_id, {})
+    elif method == "tools/list":
+        _reply(msg_id, {"tools": [
+            {"name": n, "description": (fn.__doc__ or "").strip(), "inputSchema": sch}
+            for n, (fn, sch) in TOOLS.items()
+        ]})
+    elif method == "tools/call":
+        entry = TOOLS.get(params.get("name"))
+        if not entry:
+            return _reply(msg_id, error={"code": -32602, "message": f"Unknown tool: {params.get('name')}"})
+        try:
+            result = entry[0](**(params.get("arguments") or {}))
+            _reply(msg_id, {"content": [{"type": "text", "text": json.dumps(result)}],
+                            "structuredContent": result, "isError": False})
+        except Exception as e:
+            _reply(msg_id, {"content": [{"type": "text", "text": f"Error: {e}"}], "isError": True})
+    else:
+        _reply(msg_id, error={"code": -32601, "message": f"Method not found: {method}"})
+
+
 def main():
-    """Run the MCP server."""
-    mcp.run()
+    """Run the MCP server over stdio (newline-delimited JSON-RPC)."""
+    for line in sys.stdin:
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            msg = json.loads(line)
+        except json.JSONDecodeError:
+            _reply(None, error={"code": -32700, "message": "Parse error"})
+            continue
+        handle(msg)
 
 
 if __name__ == "__main__":
